@@ -1,5 +1,6 @@
 #include <avr/io.h>
 #include <avr/pgmspace.h>
+#include <avr/interrupt.h>
 #include <util/delay.h>
 
 //iButton is on pin D0.
@@ -13,27 +14,29 @@
 
 
 
-void send1()
+void send1() //Turn off interrupts before use!
 {
 	drivePin;
 	driveLow;
-	_delay_us(15);
+	_delay_us(6);
 	floatPin;
-	_delay_us(45);
+	_delay_us(64);
 	return;
 }
 
-void send0()
+void send0() //Turn off interrupts before use!
 {
 	drivePin;
 	driveLow;
 	_delay_us(60);
 	floatPin;
+	_delay_us(10);
 	return;
 }
 
 int resetPresence()
 {
+	cli();
 	drivePin;
 	driveLow;
 	_delay_us(510);
@@ -41,15 +44,18 @@ int resetPresence()
 	_delay_us(5);
 	if(!(PIND & (1<<0)))
 	{
+		sei();
 		return 0;
 	}
 	_delay_us(60);
 	if(PIND & (1<<0))
 	{
+		sei();
 		return 0;
 	}
 	else
 	{
+		sei();
 		return 1;
 	}
 }

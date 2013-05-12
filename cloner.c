@@ -14,7 +14,7 @@
 
 
 
-void send1() //Turn off interrupts before use!
+void send1() //Turn off interrupts before using any of these!
 {
 	drivePin;
 	driveLow;
@@ -24,7 +24,7 @@ void send1() //Turn off interrupts before use!
 	return;
 }
 
-void send0() //Turn off interrupts before use!
+void send0()
 {
 	drivePin;
 	driveLow;
@@ -36,7 +36,6 @@ void send0() //Turn off interrupts before use!
 
 int resetPresence()
 {
-	cli();
 	drivePin;
 	driveLow;
 	_delay_us(510);
@@ -44,20 +43,67 @@ int resetPresence()
 	_delay_us(5);
 	if(!(PIND & (1<<0)))
 	{
-		sei();
 		return 0;
 	}
 	_delay_us(60);
 	if(PIND & (1<<0))
 	{
-		sei();
 		return 0;
 	}
 	else
 	{
-		sei();
 		return 1;
 	}
+}
+
+int getBit()
+{
+	drivePin;
+	driveLow;
+	_delay_us(6);
+	floatPin;
+	_delay_us(9);
+	if(PIND & (1<<0))
+	{
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
+void sendByte(char data)
+{
+	char temp;
+	for(int i=0;i<8;i++)
+	{
+		temp = data & 0x01;
+		if(temp & (1<<0))
+		{
+			send1();
+		}
+		else
+		{
+			send0();
+		}
+		data >>= 1;
+	}
+	return;
+}
+
+char getByte()
+{
+	char data = 0;
+	for(int i=0;i<8;i++)
+	{
+		data >>= 1;
+		if(getBit() == 1)
+		{
+			data |= (1<<7);
+		}
+	}
+	return data;
 }
 
 int main()

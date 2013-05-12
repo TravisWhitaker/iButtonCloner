@@ -22,7 +22,7 @@ int main()
 		_delay_us(510);
 		DDRD &= ~(1<<0);
 		PORTD &= ~(1<<0);
-		_delay_us(70);
+		_delay_us(65);
 		if(PIND & (1<<0))
 		{
 			PORTD &= ~(1<<6);

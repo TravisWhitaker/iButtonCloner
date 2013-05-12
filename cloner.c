@@ -12,7 +12,7 @@
 #define statusOn PORTD |= (1<<6)
 #define statusOff PORTD &= ~(1<<6)
 
-
+volatile unsigned int trigger = 0;
 
 void send1() //Turn off interrupts before using any of these!
 {
@@ -48,10 +48,12 @@ int resetPresence()
 	_delay_us(60);
 	if(PIND & (1<<0))
 	{
+		_delay_us(420);
 		return 0;
 	}
 	else
 	{
+		_delay_us(420);
 		return 1;
 	}
 }
@@ -62,7 +64,7 @@ int getBit()
 	driveLow;
 	_delay_us(6);
 	floatPin;
-	_delay_us(9);
+	_delay_us(11);
 	if(PIND & (1<<0))
 	{
 		return 0;
@@ -71,6 +73,7 @@ int getBit()
 	{
 		return 1;
 	}
+	_delay_us(55);
 }
 
 void sendByte(char data)
@@ -106,11 +109,21 @@ char getByte()
 	return data;
 }
 
+
+
+ISR(INT0_vect)
+{
+	trigger = 1;
+}
+
 int main()
 {
+	cli();
 	CLKPR = 0x80;
 	CLKPR = 0x00; //16MHz, 16 cycles per microsecond
 	floatPin;
+	EICRA |= (1<<1);
+	EIMSK |= (1<<INT0);
 	driveStatus;
 	statusOn;
 	_delay_ms(250);
@@ -120,20 +133,62 @@ int main()
 	_delay_ms(250);
 	statusOff;
 	int status = 0;
+	char poop[8];
+	sei();
 	while(1)
 	{
-		status = resetPresence();
-		if(status == 0)
+		if(trigger == 1)
 		{
-			statusOff;
+			cli();
+			trigger = 0;
+			status = resetPresence();
+			if(status == 0)
+			{
+				sei();
+				continue;
+			}
+			else
+			{
+				statusOn;
+				_delay_ms(50);
+				statusOff;
+				_delay_ms(50);
+				statusOn;
+				_delay_ms(50);
+				statusOff;
+				status = 0;
+				_delay_ms(500);
+			}
+			resetPresence();
+			sendByte(0x33);
+			for(int i=0;i<8;i++)
+			{
+				poop[i] = getByte();
+			}
+			for(int i=0;i<8;i++)
+			{
+				if(poop[1] != 0x00)
+				{
+					status = 1;
+				}
+			}
+			if(status == 1)
+			{
+				for(int i=0;i<3;i++)
+				{
+					statusOn;
+					_delay_ms(400);
+					statusOff;
+					_delay_ms(300);
+				}
+				status = 0;
+			}
+			sei();
 		}
 		else
 		{
-			statusOn;
-			_delay_ms(250);
-			statusOff;
+			
 		}
-		_delay_ms(100);
 	}
 	return 0;
 }

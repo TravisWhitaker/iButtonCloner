@@ -21,10 +21,10 @@ ISR(INT0_vect)
 	triggerRead = 1;
 }
 
-ISR(INT1_vect)
-{
-	triggerWrite = 1;
-}
+//ISR(INT1_vect)
+//{
+//	triggerWrite = 1;
+//}
 
 int main()
 {
@@ -33,9 +33,9 @@ int main()
 	CLKPR = 0x00; //16MHz, 16 cycles per microsecond
 	floatPin;
 	EICRA |= (1<<1);
-	EICRA |= (1<<3);
+//	EICRA |= (1<<3);
 	EIMSK |= (1<<INT0);
-	EIMSK |= (1<<INT1);
+//	EIMSK |= (1<<INT1);
 	driveStatus;
 	usb_init();
 	while(!(usb_configured()));
@@ -65,15 +65,15 @@ int main()
 				continue;
 			}
 			resetPresence();
-			_delay_ms(5);
+			_delay_ms(50);
 			sendByte(0x33);
-			_delay_ms(5);
+			_delay_ms(50);
 			for(int i=0;i<8;i++)
 			{
 				poop[i] = getByte();
 				_delay_ms(1);
 			}
-			statusOn;
+			statusOn; //Indidate to the user that the read is finished.
 			for(int i=7;i>(-1);i--)
 			{
 				for(int j=7;j>(-1);j--)
@@ -90,13 +90,21 @@ int main()
 			}
 			usb_serial_write("\n\r",2);
 			usb_serial_flush_output();
+			_delay_ms(400); //Give the user some time to remove the iButton.
 			statusOff;
 			sei();
 		}
-		else
+/*		if(triggerWrite == 1)
 		{
-			
+			cli();
+			statusOn;
+			triggerWrite = 0;
+			usb_serial_write("1wire read attempt detected!\n\r",30);
+			usb_serial_flush_output();
+			statusOff;
+			sei();
 		}
+*/
 	}
 	return 0;
 }

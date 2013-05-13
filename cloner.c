@@ -21,10 +21,10 @@ ISR(INT0_vect)
 	triggerRead = 1;
 }
 
-//ISR(INT1_vect)
-//{
-//	triggerWrite = 1;
-//}
+ISR(INT1_vect)
+{
+	triggerWrite = 1;
+}
 
 int main()
 {
@@ -33,9 +33,9 @@ int main()
 	CLKPR = 0x00; //16MHz, 16 cycles per microsecond
 	floatPin;
 	EICRA |= (1<<1);
-//	EICRA |= (1<<3);
+	EICRA |= (0<<3);
 	EIMSK |= (1<<INT0);
-//	EIMSK |= (1<<INT1);
+	EIMSK |= (1<<INT1);
 	driveStatus;
 	usb_init();
 	while(!(usb_configured()));
@@ -94,7 +94,7 @@ int main()
 			statusOff;
 			sei();
 		}
-/*		if(triggerWrite == 1)
+		if(triggerWrite == 1)
 		{
 			cli();
 			statusOn;
@@ -102,9 +102,9 @@ int main()
 			usb_serial_write("1wire read attempt detected!\n\r",30);
 			usb_serial_flush_output();
 			statusOff;
+			_delay_ms(50);
 			sei();
 		}
-*/
 	}
 	return 0;
 }

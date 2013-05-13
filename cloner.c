@@ -12,7 +12,8 @@
 #define statusOn PORTD |= (1<<6)
 #define statusOff PORTD &= ~(1<<6)
 
-volatile unsigned int trigger = 0;
+volatile unsigned int triggerRead = 0;
+volatile unsigned int triggerWrite = 0;
 
 void send1() //Turn off interrupts before using any of these!
 {
@@ -113,7 +114,12 @@ char getByte()
 
 ISR(INT0_vect)
 {
-	trigger = 1;
+	triggerRead = 1;
+}
+
+ISR(INT1_vect)
+{
+	triggerWrite = 1;
 }
 
 int main()
@@ -123,17 +129,26 @@ int main()
 	CLKPR = 0x00; //16MHz, 16 cycles per microsecond
 	floatPin;
 	EICRA |= (1<<1);
+	EICRA |= (1<<3);
 	EIMSK |= (1<<INT0);
+	EIMSK |= (1<<INT1);
 	driveStatus;
+	DDRB |= 0xFF;
 	statusOn;
+	PORTB = 0xFF;
 	_delay_ms(250);
 	statusOff;
+	PORTB = 0x00;
 	_delay_ms(250);
 	statusOn;
+	PORTB = 0xFF;
 	_delay_ms(250);
 	statusOff;
+	PORTB = 0x00;
 	int status = 0;
 	char poop[8];
+	usb_serial_write("Ready.\n",7);
+	usb_serial_flush_output();
 	sei();
 	while(1)
 	{
@@ -157,31 +172,25 @@ int main()
 				_delay_ms(50);
 				statusOff;
 				status = 0;
-				_delay_ms(500);
+				_delay_ms(250);
 			}
 			resetPresence();
+			_delay_ms(100);
 			sendByte(0x33);
+			_delay_ms(60);
 			for(int i=0;i<8;i++)
 			{
 				poop[i] = getByte();
+				_delay_ms(60);
 			}
 			for(int i=0;i<8;i++)
 			{
-				if(poop[1] != 0x00)
-				{
-					status = 1;
-				}
-			}
-			if(status == 1)
-			{
-				for(int i=0;i<3;i++)
-				{
-					statusOn;
-					_delay_ms(400);
-					statusOff;
-					_delay_ms(300);
-				}
-				status = 0;
+				PORTB = poop[i];
+				statusOn;
+				_delay_ms(500);
+				statusOff;
+				PORTB = 0x00;
+				_delay_ms(150);
 			}
 			sei();
 		}

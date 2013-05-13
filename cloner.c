@@ -3,7 +3,8 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 
-//iButton is on pin D0.
+#include "1wire.h"
+#include "usb_serial.h"
 
 #define drivePin DDRD |= (1<<0)
 #define driveLow PORTD &= ~(1<<0)
@@ -14,103 +15,6 @@
 
 volatile unsigned int triggerRead = 0;
 volatile unsigned int triggerWrite = 0;
-
-void send1() //Turn off interrupts before using any of these!
-{
-	drivePin;
-	driveLow;
-	_delay_us(6);
-	floatPin;
-	_delay_us(64);
-	return;
-}
-
-void send0()
-{
-	drivePin;
-	driveLow;
-	_delay_us(60);
-	floatPin;
-	_delay_us(10);
-	return;
-}
-
-int resetPresence()
-{
-	drivePin;
-	driveLow;
-	_delay_us(510);
-	floatPin;
-	_delay_us(5);
-	if(!(PIND & (1<<0)))
-	{
-		return 0;
-	}
-	_delay_us(60);
-	if(PIND & (1<<0))
-	{
-		_delay_us(420);
-		return 0;
-	}
-	else
-	{
-		_delay_us(420);
-		return 1;
-	}
-}
-
-int getBit()
-{
-	drivePin;
-	driveLow;
-	_delay_us(6);
-	floatPin;
-	_delay_us(11);
-	if(PIND & (1<<0))
-	{
-		return 0;
-	}
-	else
-	{
-		return 1;
-	}
-	_delay_us(55);
-}
-
-void sendByte(char data)
-{
-	char temp;
-	for(int i=0;i<8;i++)
-	{
-		temp = data & 0x01;
-		if(temp & (1<<0))
-		{
-			send1();
-		}
-		else
-		{
-			send0();
-		}
-		data >>= 1;
-	}
-	return;
-}
-
-char getByte()
-{
-	char data = 0;
-	for(int i=0;i<8;i++)
-	{
-		data >>= 1;
-		if(getBit() == 1)
-		{
-			data |= (1<<7);
-		}
-	}
-	return data;
-}
-
-
 
 ISR(INT0_vect)
 {
@@ -133,20 +37,20 @@ int main()
 	EIMSK |= (1<<INT0);
 	EIMSK |= (1<<INT1);
 	driveStatus;
-	DDRB |= 0xFF;
+	usb_init();
+	while(!(usb_configured()));
 	statusOn;
 	PORTB = 0xFF;
 	_delay_ms(250);
 	statusOff;
-	PORTB = 0x00;
 	_delay_ms(250);
 	statusOn;
-	PORTB = 0xFF;
 	_delay_ms(250);
 	statusOff;
-	PORTB = 0x00;
 	int status = 0;
 	char poop[8];
+	usb_serial_write("Ready.\n\r",8);
+	usb_serial_flush_output();
 	sei();
 	while(1)
 	{
@@ -160,21 +64,6 @@ int main()
 				sei();
 				continue;
 			}
-			else
-			{
-				statusOn;
-				_delay_ms(50);
-				statusOff;
-				_delay_ms(50);
-				statusOn;
-				_delay_ms(50);
-				statusOff;
-				_delay_ms(50);
-				statusOn;
-				_delay_ms(50);
-				statusOff;
-				status = 0;
-			}
 			resetPresence();
 			_delay_ms(5);
 			sendByte(0x33);
@@ -184,15 +73,25 @@ int main()
 				poop[i] = getByte();
 				_delay_ms(1);
 			}
-			for(int i=0;i<8;i++)
+			statusOn;
+			_delay_ms(100);
+			statusOff;
+			for(int i=7;i>(-1);i--)
 			{
-				PORTB = poop[i];
-				statusOn;
-				_delay_ms(150);
-				statusOff;
-				PORTB = 0x00;
-				_delay_ms(50);
+				for(int j=7;j>(-1);j--)
+				{
+					if(poop[i] & (1<<j))
+					{
+						usb_serial_putchar_nowait('1');
+					}
+					else
+					{
+						usb_serial_putchar_nowait('0');
+					}
+				}
 			}
+			usb_serial_write("\n\r",2);
+			usb_serial_flush_output();
 			sei();
 		}
 		else

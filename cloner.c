@@ -147,15 +147,13 @@ int main()
 	PORTB = 0x00;
 	int status = 0;
 	char poop[8];
-	usb_serial_write("Ready.\n",7);
-	usb_serial_flush_output();
 	sei();
 	while(1)
 	{
-		if(trigger == 1)
+		if(triggerRead == 1)
 		{
 			cli();
-			trigger = 0;
+			triggerRead = 0;
 			status = resetPresence();
 			if(status == 0)
 			{
@@ -171,26 +169,29 @@ int main()
 				statusOn;
 				_delay_ms(50);
 				statusOff;
+				_delay_ms(50);
+				statusOn;
+				_delay_ms(50);
+				statusOff;
 				status = 0;
-				_delay_ms(250);
 			}
 			resetPresence();
-			_delay_ms(100);
+			_delay_ms(5);
 			sendByte(0x33);
-			_delay_ms(60);
+			_delay_ms(5);
 			for(int i=0;i<8;i++)
 			{
 				poop[i] = getByte();
-				_delay_ms(60);
+				_delay_ms(1);
 			}
 			for(int i=0;i<8;i++)
 			{
 				PORTB = poop[i];
 				statusOn;
-				_delay_ms(500);
+				_delay_ms(150);
 				statusOff;
 				PORTB = 0x00;
-				_delay_ms(150);
+				_delay_ms(50);
 			}
 			sei();
 		}

@@ -74,8 +74,6 @@ int main()
 				_delay_ms(1);
 			}
 			statusOn;
-			_delay_ms(100);
-			statusOff;
 			for(int i=7;i>(-1);i--)
 			{
 				for(int j=7;j>(-1);j--)
@@ -92,6 +90,7 @@ int main()
 			}
 			usb_serial_write("\n\r",2);
 			usb_serial_flush_output();
+			statusOff;
 			sei();
 		}
 		else
